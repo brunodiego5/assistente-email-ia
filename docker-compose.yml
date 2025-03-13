@@ -1,1 +1,50 @@
-# docker-compose para ambiente local inicial
+version: '3.8'
+
+services:
+
+  mongodb:
+    image: mongo:6.0
+    container_name: assistente_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-rootpassword}
+    volumes:
+      - mongo_data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3.9-management
+    container_name: assistente_rabbit
+    restart: always
+    ports:
+      - "5672:5672"     # Porta para conexões AMQP
+      - "15672:15672"   # Porta para interface de gerenciamento
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-adminpassword}
+
+  email-ingestion:
+    build:
+      context: ./microservices/email-ingestion
+      dockerfile: Dockerfile
+    container_name: assistente_email_ingestion
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+      - rabbitmq
+    environment:
+      IMAP_HOST: ${IMAP_HOST:-outlook.office365.com}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-usuario@outlook.com}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-minha_senha_secreta}
+      MONGO_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-root}:${MONGO_INITDB_ROOT_PASSWORD:-rootpassword}@mongodb:27017
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    # Caso o serviço necessite expor alguma porta:
+    # ports:
+    #   - "8001:8000"
+
+volumes:
+  mongo_data:
