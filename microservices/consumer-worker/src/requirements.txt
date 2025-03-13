@@ -1,0 +1,4 @@
+pymongo
+pika
+python-dotenv
+imapclient

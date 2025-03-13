@@ -1,0 +1,1 @@
+# Entry point inicial do microserviço
